@@ -11,16 +11,16 @@ BANDITS = {
 }
 POLICIES = {
     'random': (RandomPolicy, {}),
-    # 'epsilon greedy (10%)': (EpsilonGreedyPolicy, {'epsilon': 0.1}),
+    'epsilon greedy (10%)': (EpsilonGreedyPolicy, {'epsilon': 0.1}),
     # 'epsilon greedy (5%)': (EpsilonGreedyPolicy, {'epsilon': 0.05}),
     'epsilon greedy (1%)': (EpsilonGreedyPolicy, {'epsilon': 0.01}),
     # 'epsilon weighted (alpha 0.1)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.1}),
-    'epsilon weighted (alpha 0.01)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.01}),
+    # 'epsilon weighted (alpha 0.01)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.01}),
     'softmax (0.01)': (SoftmaxPolicy, {'temperature': 0.01}),
     'softmax (0.1)': (SoftmaxPolicy, {'temperature': 0.1}),
-    # 'softmax (0.2)': (SoftmaxPolicy, {'temperature': 0.2}),
+    'softmax (0.2)': (SoftmaxPolicy, {'temperature': 0.2}),
     # 'softmax (0.3)': (SoftmaxPolicy, {'temperature': 0.3}),
-    # 'softmax (0.4)': (SoftmaxPolicy, {'temperature': 0.4}),
+    'softmax (0.4)': (SoftmaxPolicy, {'temperature': 0.4}),
     # 'softmax (0.5)': (SoftmaxPolicy, {'temperature': 0.5}),
     # 'softmax (0.6)': (SoftmaxPolicy, {'temperature': 0.6}),
     # 'softmax (0.7)': (SoftmaxPolicy, {'temperature': 0.7}),
@@ -46,7 +46,7 @@ class Agent:
             'avg_regret': [],
 
         }
-        optimal_bandit = min(bandit for bandit in self.bandits)
+        optimal_bandit = max(bandit for bandit in self.bandits)
         avg_reward = 0.0
         avg_regret = 0.0
 
@@ -57,7 +57,7 @@ class Agent:
 
             # measure regret
             if self.bandits[0].is_nonstationary:  # if bandits aren't stationary we'll need to keep checking this
-                optimal_bandit = min(bandit for bandit in self.bandits)
+                optimal_bandit = max(bandit for bandit in self.bandits)
             regret = optimal_bandit.p - self.bandits[bandit_idx].p
             avg_regret = self.incremental_mean(avg_regret, regret, n)
             results['avg_regret'].append(avg_regret)
@@ -89,11 +89,11 @@ def print_bandit_summary(bandits: List[Bandit]) -> None:
     print()
     for i, bandit in enumerate(bandits):
         print(f'{i}) {bandit}')
-    best = min(bandit for bandit in bandits)
+    best = max(bandit for bandit in bandits)
     print('\nBest: {}) {}\n\n#########################\n'.format(bandits.index(best), str(best)))
 
 
-def plot_results(history) -> None:
+def plot_results(history, bandit_cls, nb_bandits) -> None:
     """Plot the average rewards and average regret for each algorithm."""
 
     subplots = {
@@ -110,13 +110,15 @@ def plot_results(history) -> None:
         subplots['avg_regret'][policy_name] = avg_regret
 
     fig, ax = plt.subplots(nrows=len(subplots), ncols=1)
-    fig.suptitle('Bandits')
+    fig.suptitle(f'{bandit_cls.__name__}x{nb_bandits}')
     for row, subplot_name in zip(ax, subplots):
         row.set_ylabel(subplot_name)
         subplot_values = subplots[subplot_name]
         for key, value in subplot_values.items():
             row.plot(value, label=key)
         row.legend()
+        if len(value) > 500:  # make it easier to read when many steps
+            row.set_xscale('log')
 
     plt.xlabel('Iterations')
     fig.subplots_adjust(top=0.88)
@@ -126,7 +128,8 @@ def plot_results(history) -> None:
 def main(args):
     # create some bandits
     bandit_cls = BANDITS[args.bandit_type]
-    bandits = [bandit_cls(is_nonstationary=False) for _ in range(args.nb_bandits)]
+    nb_bandits = args.nb_bandits
+    bandits = bandit_cls.build(nb_bandits)
     print_bandit_summary(bandits)
 
     # for each policy
@@ -140,7 +143,7 @@ def main(args):
         for _ in range(args.trials):
             policy_results.append(agent.train(args.steps))
         results[name] = policy_results
-    plot_results(results)
+    plot_results(results, bandit_cls, nb_bandits)
 
 
 if __name__ == '__main__':
