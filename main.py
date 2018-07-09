@@ -5,27 +5,28 @@ from bandits import Bandit, BernoulliBandit, GaussianBandit
 from policies import Policy, RandomPolicy, EpsilonGreedyPolicy, EpsilonGreedyWeightedPolicy, SoftmaxPolicy, UCB1Policy
 from typing import List, Tuple
 
+DEBUG = True
 BANDITS = {
     'bernoulli': BernoulliBandit,
     'gaussian': GaussianBandit,
 }
 POLICIES = {
-    'random': (RandomPolicy, {}),
-    'epsilon greedy (10%)': (EpsilonGreedyPolicy, {'epsilon': 0.1}),
-    # 'epsilon greedy (5%)': (EpsilonGreedyPolicy, {'epsilon': 0.05}),
-    'epsilon greedy (1%)': (EpsilonGreedyPolicy, {'epsilon': 0.01}),
-    # 'epsilon weighted (alpha 0.1)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.1}),
-    # 'epsilon weighted (alpha 0.01)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.01}),
-    # 'softmax (0.01)': (SoftmaxPolicy, {'temperature': 0.01}),
-    'softmax (0.1)': (SoftmaxPolicy, {'temperature': 0.1}),
-    # 'softmax (0.2)': (SoftmaxPolicy, {'temperature': 0.2}),
-    # 'softmax (0.3)': (SoftmaxPolicy, {'temperature': 0.3}),
-    'softmax (0.4)': (SoftmaxPolicy, {'temperature': 0.4}),
-    # 'softmax (0.5)': (SoftmaxPolicy, {'temperature': 0.5}),
-    # 'softmax (0.6)': (SoftmaxPolicy, {'temperature': 0.6}),
-    # 'softmax (0.7)': (SoftmaxPolicy, {'temperature': 0.7}),
-    # 'softmax (0.8)': (SoftmaxPolicy, {'temperature': 0.8}),
-    # 'softmax (0.9)': (SoftmaxPolicy, {'temperature': 0.9}),
+    # 'random': (RandomPolicy, {}),
+    # 'epsilon greedy (10%)': (EpsilonGreedyPolicy, {'epsilon': 0.1}),
+    # # 'epsilon greedy (5%)': (EpsilonGreedyPolicy, {'epsilon': 0.05}),
+    # 'epsilon greedy (1%)': (EpsilonGreedyPolicy, {'epsilon': 0.01}),
+    # # 'epsilon weighted (alpha 0.1)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.1}),
+    # # 'epsilon weighted (alpha 0.01)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.01}),
+    # # 'softmax (0.01)': (SoftmaxPolicy, {'temperature': 0.01}),
+    # 'softmax (0.1)': (SoftmaxPolicy, {'temperature': 0.1}),
+    # # 'softmax (0.2)': (SoftmaxPolicy, {'temperature': 0.2}),
+    # # 'softmax (0.3)': (SoftmaxPolicy, {'temperature': 0.3}),
+    # 'softmax (0.4)': (SoftmaxPolicy, {'temperature': 0.4}),
+    # # 'softmax (0.5)': (SoftmaxPolicy, {'temperature': 0.5}),
+    # # 'softmax (0.6)': (SoftmaxPolicy, {'temperature': 0.6}),
+    # # 'softmax (0.7)': (SoftmaxPolicy, {'temperature': 0.7}),
+    # # 'softmax (0.8)': (SoftmaxPolicy, {'temperature': 0.8}),
+    # # 'softmax (0.9)': (SoftmaxPolicy, {'temperature': 0.9}),
     'ucb1': (UCB1Policy, {}),
 }
 
@@ -33,10 +34,11 @@ POLICIES = {
 class Agent:
     """Wrapper around the policy and bandits."""
 
-    def __init__(self, bandits: List[Bandit], policy: Policy) -> None:
+    def __init__(self, bandits: List[Bandit], policy: Policy, debug=False) -> None:
         super().__init__()
         self.bandits: List[Bandit] = bandits
         self.policy: Policy = policy
+        self.debug = debug
 
     def train(self, nb_steps: int) -> dict:
         """
@@ -49,8 +51,17 @@ class Agent:
         results = {
             'avg_reward': [],
             'avg_regret': [],
-
+            'params': {
+                'total_rewards': {},
+                'avg_rewards': {},
+                'weighted_q': {},
+            }
         }
+        if self.debug:
+            for key in results['params'].keys():
+                for i in range(len(self.bandits)):
+                    results['params'][key][i] = []
+
         optimal_bandit = max(bandit for bandit in self.bandits)
         avg_reward = 0.0
         avg_regret = 0.0
@@ -66,6 +77,17 @@ class Agent:
             regret = optimal_bandit.p - self.bandits[bandit_idx].p
             avg_regret = self.incremental_mean(avg_regret, regret, n)
             results['avg_regret'].append(avg_regret)
+
+            if self.debug:
+                try:
+                    for i, value in enumerate(self.policy.total_rewards):
+                        results['params']['total_rewards'][i].append(value)
+                    for i, value in enumerate(self.policy.avg_rewards):
+                        results['params']['avg_rewards'][i].append(value)
+                    for i, value in enumerate(self.policy.q):
+                        results['params']['weighted_q'][i].append(value)
+                except NameError:
+                    pass
 
         return results
 
@@ -134,6 +156,30 @@ def plot_results(history, bandit_cls, nb_bandits) -> None:
     plt.show()
 
 
+def plot_debug(history, bandit_cls, nb_bandits) -> None:
+    subplots = {
+        # 'total_rewards': history['ucb1'][0]['params']['total_rewards'],
+        'avg_rewards': history['ucb1'][0]['params']['avg_rewards'],
+        'weighted_q': history['ucb1'][0]['params']['weighted_q'],
+    }
+
+    fig, ax = plt.subplots(nrows=len(subplots), ncols=1)
+    fig.suptitle(f'{bandit_cls.__name__}x{nb_bandits}')
+    for row, subplot_name in zip(ax, subplots):
+        row.set_ylabel(subplot_name)
+        subplot_values = subplots[subplot_name]
+        for key, value in subplot_values.items():
+            row.plot(value, label=key)
+        row.legend()
+        if len(value) > 500:  # make it easier to read when many steps
+            row.set_xscale('log')
+        row.grid()
+
+    plt.xlabel('Iterations')
+    fig.subplots_adjust(top=0.88)
+    plt.show()
+
+
 def main(args):
     # create some bandits
     bandit_cls = BANDITS[args.bandit_type]
@@ -147,13 +193,15 @@ def main(args):
     results = {}
     for name, policy_parts in POLICIES.items():
         policy_cls, kwargs = policy_parts
-        policy = policy_cls(len(bandits), **kwargs)
-        agent = Agent(bandits, policy)
+        policy = policy_cls(len(bandits), debug=DEBUG, **kwargs)
+        agent = Agent(bandits, policy, debug=DEBUG)
         policy_results = []
         for _ in range(args.trials):
             policy_results.append(agent.train(args.steps))
         results[name] = policy_results
     plot_results(results, bandit_cls, nb_bandits)
+    if DEBUG:
+        plot_debug(results, bandit_cls, nb_bandits)
 
 
 if __name__ == '__main__':

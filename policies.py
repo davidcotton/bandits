@@ -6,9 +6,10 @@ import numpy as np
 class Policy(ABC):
     """Base class for a policy or method of selecting a bandit."""
 
-    def __init__(self, nb_bandits: int) -> None:
+    def __init__(self, nb_bandits: int, debug: bool) -> None:
         super().__init__()
         self.nb_bandits: int = nb_bandits
+        self.debug = debug
 
     @abstractmethod
     def select_action(self) -> int:
@@ -44,19 +45,24 @@ class RandomPolicy(Policy):
 class ActionValuePolicy(Policy):
     """Action-Value methods/policies estimate the values of actions and use these estimates to make decisions."""
 
-    def __init__(self, nb_bandits: int, initial_q_value: float = 0.0):
-        super().__init__(nb_bandits)
+    def __init__(self, nb_bandits: int, debug: bool, initial_q_value: float = 0.0):
+        super().__init__(nb_bandits, debug)
         # number of times we have selected/visited each bandit arm
         self.visits: np.array = np.zeros([nb_bandits], dtype='int32')
         # estimate of the value of each bandit arm
         self.q: np.array = np.array([initial_q_value for _ in range(nb_bandits)])
 
+        if self.debug:
+            self.total_rewards = np.zeros([self.nb_bandits])
+            self.avg_rewards = np.zeros([self.nb_bandits])
+            self.weighted_q = np.zeros([self.nb_bandits])
+
 
 class EpsilonGreedyPolicy(ActionValuePolicy):
     """Select an action greedily with epsilon chance of a random action."""
 
-    def __init__(self, nb_bandits: int, initial_q_value=0.0, epsilon=0.1):
-        super().__init__(nb_bandits, initial_q_value)
+    def __init__(self, nb_bandits: int, debug: bool, initial_q_value=0.0, epsilon=0.1):
+        super().__init__(nb_bandits, debug, initial_q_value)
         self.epsilon: float = epsilon
 
     def select_action(self) -> int:
@@ -73,8 +79,8 @@ class EpsilonGreedyPolicy(ActionValuePolicy):
 
 
 class EpsilonGreedyWeightedPolicy(EpsilonGreedyPolicy):
-    def __init__(self, bandits=None, initial_q_value=0.0, epsilon=0.1, alpha=0.1):
-        super().__init__(bandits, initial_q_value, epsilon)
+    def __init__(self, nb_bandits: int, debug: bool, initial_q_value=0.0, epsilon=0.1, alpha=0.1):
+        super().__init__(nb_bandits, debug, initial_q_value, epsilon)
         self.alpha = alpha
 
     def update(self, bandit: int, reward: float) -> None:
@@ -84,8 +90,8 @@ class EpsilonGreedyWeightedPolicy(EpsilonGreedyPolicy):
 
 
 class SoftmaxPolicy(ActionValuePolicy):
-    def __init__(self, nb_bandits: int, temperature: float = 0.4):
-        super().__init__(nb_bandits, initial_q_value=0.0)
+    def __init__(self, nb_bandits: int, debug: bool, temperature: float = 0.4):
+        super().__init__(nb_bandits, debug, initial_q_value=0.0)
         # temperature [0,1] hyperparameter controls how randomly softmax acts
         # higher temperatures (tau -> 1) and all actions tend towards the same probability
         # lower temperatures (tau -> 0) the more likely the action with the highest value will be chosen
@@ -109,9 +115,10 @@ class SoftmaxPolicy(ActionValuePolicy):
 class UCB1Policy(ActionValuePolicy):
     """Upper Confidence Bounds."""
 
-    def __init__(self, nb_bandits: int, initial_q_value: float = 0.0):
-        super().__init__(nb_bandits, initial_q_value)
+    def __init__(self, nb_bandits: int, debug: bool, initial_q_value: float = 0.0):
+        super().__init__(nb_bandits, debug, initial_q_value)
         self.total_visits = 0
+        self.alpha = 0.1
 
     def select_action(self) -> int:
         self.total_visits += 1
@@ -120,11 +127,12 @@ class UCB1Policy(ActionValuePolicy):
         if np.min(self.visits) == 0:
             for idx, count in enumerate(self.visits):
                 if count == 0:
-                    return idx
+                    break
+        else:
+            ucb_values = self.q / self.visits + self.upper_bound(self.total_visits, self.visits)
+            idx = int(np.argmax(ucb_values))
 
-        ucb_values = self.q / self.visits + self.upper_bound(self.total_visits, self.visits)
-
-        return int(np.argmax(ucb_values))
+        return idx
 
     @staticmethod
     def upper_bound(step: int, visits: np.array) -> float:
@@ -138,7 +146,16 @@ class UCB1Policy(ActionValuePolicy):
 
     def update(self, bandit: int, reward: float) -> None:
         self.visits[bandit] += 1
+        self.total_rewards[bandit] += reward
 
-        q_value = self.q[bandit] + reward
-        # q_value = self.q[bandit] + (1 / self.visits[bandit]) * (reward - self.q[bandit])
-        self.q[bandit] = q_value
+        total_reward = self.q[bandit] + reward
+        # avg_reward = self.total_rewards[bandit] / self.visits[bandit]
+        avg_reward = self.q[bandit] + (1 / self.visits[bandit]) * (reward - self.q[bandit])
+        weighted_q = self.q[bandit] + self.alpha * (reward - self.q[bandit])
+
+        if self.debug:
+            self.total_rewards[bandit] = total_reward
+            self.avg_rewards[bandit] = avg_reward
+            self.weighted_q[bandit] = weighted_q
+
+        self.q[bandit] = weighted_q
