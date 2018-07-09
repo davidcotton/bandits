@@ -2,7 +2,7 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 from bandits import Bandit, BernoulliBandit, GaussianBandit
-from policies import Policy, RandomPolicy, EpsilonGreedyPolicy, EpsilonGreedyWeightedPolicy, SoftmaxPolicy
+from policies import Policy, RandomPolicy, EpsilonGreedyPolicy, EpsilonGreedyWeightedPolicy, SoftmaxPolicy, UCB1Policy
 from typing import List, Tuple
 
 BANDITS = {
@@ -16,9 +16,9 @@ POLICIES = {
     'epsilon greedy (1%)': (EpsilonGreedyPolicy, {'epsilon': 0.01}),
     # 'epsilon weighted (alpha 0.1)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.1}),
     # 'epsilon weighted (alpha 0.01)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.01}),
-    'softmax (0.01)': (SoftmaxPolicy, {'temperature': 0.01}),
+    # 'softmax (0.01)': (SoftmaxPolicy, {'temperature': 0.01}),
     'softmax (0.1)': (SoftmaxPolicy, {'temperature': 0.1}),
-    'softmax (0.2)': (SoftmaxPolicy, {'temperature': 0.2}),
+    # 'softmax (0.2)': (SoftmaxPolicy, {'temperature': 0.2}),
     # 'softmax (0.3)': (SoftmaxPolicy, {'temperature': 0.3}),
     'softmax (0.4)': (SoftmaxPolicy, {'temperature': 0.4}),
     # 'softmax (0.5)': (SoftmaxPolicy, {'temperature': 0.5}),
@@ -26,7 +26,7 @@ POLICIES = {
     # 'softmax (0.7)': (SoftmaxPolicy, {'temperature': 0.7}),
     # 'softmax (0.8)': (SoftmaxPolicy, {'temperature': 0.8}),
     # 'softmax (0.9)': (SoftmaxPolicy, {'temperature': 0.9}),
-    # 'softmax (1.0)': (SoftmaxPolicy, {'temperature': 1.0}),
+    'ucb1': (UCB1Policy, {}),
 }
 
 
@@ -39,7 +39,12 @@ class Agent:
         self.policy: Policy = policy
 
     def train(self, nb_steps: int) -> dict:
-        """Train the agent for a number of steps."""
+        """
+        Train the agent for a number of steps.
+
+        :param nb_steps: the number of steps to train for
+        :return: the training history
+        """
         print(f'Training {self.policy.__class__.__name__} for {nb_steps:,} steps')
         results = {
             'avg_reward': [],
@@ -69,11 +74,14 @@ class Agent:
         return mean + (value - mean) / n
 
     def act(self) -> Tuple[float, int]:
-        """Take a single step.
-        Select a bandit with our policy, take the action and receive the reward."""
+        """
+        Select a bandit with our policy, take the action and receive the reward.
+
+        :return: a tuple of the reward received and the bandit arm chosen
+        """
         bandit_idx = self.policy.select_action()
         reward = self.bandits[bandit_idx].pull()
-        self.policy.update(reward)
+        self.policy.update(bandit_idx, reward)
         return reward, bandit_idx
 
     def print_estimates(self) -> None:
@@ -119,6 +127,7 @@ def plot_results(history, bandit_cls, nb_bandits) -> None:
         row.legend()
         if len(value) > 500:  # make it easier to read when many steps
             row.set_xscale('log')
+        row.grid()
 
     plt.xlabel('Iterations')
     fig.subplots_adjust(top=0.88)
@@ -130,7 +139,8 @@ def main(args):
     bandit_cls = BANDITS[args.bandit_type]
     nb_bandits = args.nb_bandits
     bandits = bandit_cls.build(nb_bandits)
-    print_bandit_summary(bandits)
+    if len(bandits) <= 10:
+        print_bandit_summary(bandits)
 
     # for each policy
     #   - train an agent with that policy for a number of trials

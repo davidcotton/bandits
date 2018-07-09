@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
+from math import log
 import numpy as np
-from typing import List
 
 
 class Policy(ABC):
@@ -12,13 +12,21 @@ class Policy(ABC):
 
     @abstractmethod
     def select_action(self) -> int:
-        """Choose a bandit and pull it's level.
-        Returns the reward."""
+        """
+        Choose a bandit to play.
+
+        :return: the bandit arm index
+        """
         pass
 
     @abstractmethod
-    def update(self, reward: float) -> None:
-        """Update the bandit with reward received."""
+    def update(self, bandit: int, reward: float) -> None:
+        """
+        Update the bandit with reward received.
+
+        :param bandit: the last action taken
+        :param reward: the reward received
+        """
         pass
 
 
@@ -28,7 +36,7 @@ class RandomPolicy(Policy):
     def select_action(self) -> int:
         return np.random.choice(self.nb_bandits)
 
-    def update(self, reward: float) -> None:
+    def update(self, bandit: int, reward: float) -> None:
         """No update on a random policy."""
         pass
 
@@ -38,12 +46,10 @@ class ActionValuePolicy(Policy):
 
     def __init__(self, nb_bandits: int, initial_q_value: float = 0.0):
         super().__init__(nb_bandits)
-        # the estimates of values of each bandit
+        # number of times we have selected/visited each bandit arm
+        self.visits: np.array = np.zeros([nb_bandits], dtype='int32')
+        # estimate of the value of each bandit arm
         self.q: np.array = np.array([initial_q_value for _ in range(nb_bandits)])
-        # the number of times we have selected each bandit
-        # self.counts: List[int] = [0 for _ in range(nb_bandits)]
-        self.counts: np.array = np.zeros([nb_bandits], dtype='int32')
-        self.prev_action = None
 
 
 class EpsilonGreedyPolicy(ActionValuePolicy):
@@ -58,14 +64,12 @@ class EpsilonGreedyPolicy(ActionValuePolicy):
             bandit_idx = np.argmax(self.q)
         else:
             bandit_idx = np.random.randint(0, self.nb_bandits - 1)
-        self.prev_action = bandit_idx
         return int(bandit_idx)
 
-    def update(self, reward: float) -> None:
-        idx = self.prev_action
-        self.counts[idx] += 1
-        q_value = self.q[idx] + (1 / self.counts[idx]) * (reward - self.q[idx])
-        self.q[idx] = q_value
+    def update(self, bandit: int, reward: float) -> None:
+        self.visits[bandit] += 1
+        q_value = self.q[bandit] + (1 / self.visits[bandit]) * (reward - self.q[bandit])
+        self.q[bandit] = q_value
 
 
 class EpsilonGreedyWeightedPolicy(EpsilonGreedyPolicy):
@@ -73,11 +77,10 @@ class EpsilonGreedyWeightedPolicy(EpsilonGreedyPolicy):
         super().__init__(bandits, initial_q_value, epsilon)
         self.alpha = alpha
 
-    def update(self, reward: float) -> None:
-        idx = self.prev_action
-        self.counts[idx] += 1
-        q_value = self.q[idx] + self.alpha * (reward - self.q[idx])
-        self.q[idx] = q_value
+    def update(self, bandit: int, reward: float) -> None:
+        self.visits[bandit] += 1
+        q_value = self.q[bandit] + self.alpha * (reward - self.q[bandit])
+        self.q[bandit] = q_value
 
 
 class SoftmaxPolicy(ActionValuePolicy):
@@ -91,15 +94,51 @@ class SoftmaxPolicy(ActionValuePolicy):
     def select_action(self) -> int:
         softmax = self.softmax(self.q)
         bandit_idx = np.random.choice(self.nb_bandits, None, p=softmax)
-        self.prev_action = bandit_idx
         return bandit_idx
 
     def softmax(self, x):
         return np.exp(x / self.tau) / np.sum(np.exp(x / self.tau))
 
-    def update(self, reward: float) -> None:
-        idx = self.prev_action
-        self.counts[idx] += 1
+    def update(self, bandit: int, reward: float) -> None:
+        self.visits[bandit] += 1
 
-        q_value = self.q[idx] + (1 / self.counts[idx]) * (reward - self.q[idx])
-        self.q[idx] = q_value
+        q_value = self.q[bandit] + (1 / self.visits[bandit]) * (reward - self.q[bandit])
+        self.q[bandit] = q_value
+
+
+class UCB1Policy(ActionValuePolicy):
+    """Upper Confidence Bounds."""
+
+    def __init__(self, nb_bandits: int, initial_q_value: float = 0.0):
+        super().__init__(nb_bandits, initial_q_value)
+        self.total_visits = 0
+
+    def select_action(self) -> int:
+        self.total_visits += 1
+
+        # initialise: make sure we have visited every action
+        if np.min(self.visits) == 0:
+            for idx, count in enumerate(self.visits):
+                if count == 0:
+                    return idx
+
+        ucb_values = self.q / self.visits + self.upper_bound(self.total_visits, self.visits)
+
+        return int(np.argmax(ucb_values))
+
+    @staticmethod
+    def upper_bound(step: int, visits: np.array) -> float:
+        """Calculate the upper confidence bound for a vector of bandit arms.
+
+        :param step: the total number of visits to ALL arms
+        :param visits: a vector of number of visits to each arm
+        :return: the UCB value
+        """
+        return np.sqrt(2 * log(step) / visits)
+
+    def update(self, bandit: int, reward: float) -> None:
+        self.visits[bandit] += 1
+
+        q_value = self.q[bandit] + reward
+        # q_value = self.q[bandit] + (1 / self.visits[bandit]) * (reward - self.q[bandit])
+        self.q[bandit] = q_value
