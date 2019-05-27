@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
+import math
 from math import log
+import random
+
 import numpy as np
 
 
@@ -159,3 +162,43 @@ class UCB1Policy(ActionValuePolicy):
             self.weighted_q[bandit] = weighted_q
 
         self.q[bandit] = weighted_q
+
+
+class Exp3Policy(ActionValuePolicy):
+
+    def __init__(self, nb_bandits, debug, initial_q_value=0.0, gamma=0.07):
+        super().__init__(nb_bandits, debug, initial_q_value)
+        self.gamma = float(gamma)
+        self.weights = [1.0] * nb_bandits
+
+    def select_action(self) -> int:
+        total_weight = sum(self.weights)
+        probs = [0.0] * self.nb_bandits
+        for arm in range(self.nb_bandits):
+            probs[arm] = (1 - self.gamma) * (self.weights[arm] / total_weight)
+            probs[arm] = probs[arm] + self.gamma * (1.0 / float(self.nb_bandits))
+        value = self._categorical_draw(probs)
+        return value
+
+    def update(self, bandit, reward) -> None:
+        chosen_arm = bandit
+        total_weight = sum(self.weights)
+        probs = [0.0] * self.nb_bandits
+        for arm in range(self.nb_bandits):
+            probs[arm] = (1 - self.gamma) * (self.weights[arm] / total_weight)
+            probs[arm] = probs[arm] + self.gamma * (1.0 / float(self.nb_bandits))
+
+        x = reward / probs[chosen_arm]
+
+        growth_factor = math.exp((self.gamma / self.nb_bandits) * x)
+        self.weights[chosen_arm] = self.weights[chosen_arm] * growth_factor
+
+    @staticmethod
+    def _categorical_draw(probs):
+        z = random.random()
+        cumulative_probs = 0.0
+        for i in range(len(probs)):
+            cumulative_probs += probs[i]
+            if cumulative_probs > z:
+                return i
+        return len(probs) - 1

@@ -1,9 +1,12 @@
 import argparse
+from typing import List, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
+
 from bandits import Bandit, BernoulliBandit, GaussianBandit
-from policies import Policy, RandomPolicy, EpsilonGreedyPolicy, EpsilonGreedyWeightedPolicy, SoftmaxPolicy, UCB1Policy
-from typing import List, Tuple
+from policies import Policy, RandomPolicy, EpsilonGreedyPolicy, EpsilonGreedyWeightedPolicy, SoftmaxPolicy, UCB1Policy, Exp3Policy
+
 
 DEBUG = True
 BANDITS = {
@@ -12,9 +15,9 @@ BANDITS = {
 }
 POLICIES = {
     # 'random': (RandomPolicy, {}),
-    # 'epsilon greedy (10%)': (EpsilonGreedyPolicy, {'epsilon': 0.1}),
+    'epsilon greedy (10%)': (EpsilonGreedyPolicy, {'epsilon': 0.1}),
     # # 'epsilon greedy (5%)': (EpsilonGreedyPolicy, {'epsilon': 0.05}),
-    # 'epsilon greedy (1%)': (EpsilonGreedyPolicy, {'epsilon': 0.01}),
+    'epsilon greedy (1%)': (EpsilonGreedyPolicy, {'epsilon': 0.01}),
     # # 'epsilon weighted (alpha 0.1)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.1}),
     # # 'epsilon weighted (alpha 0.01)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.01}),
     # # 'softmax (0.01)': (SoftmaxPolicy, {'temperature': 0.01}),
@@ -27,7 +30,16 @@ POLICIES = {
     # # 'softmax (0.7)': (SoftmaxPolicy, {'temperature': 0.7}),
     # # 'softmax (0.8)': (SoftmaxPolicy, {'temperature': 0.8}),
     # # 'softmax (0.9)': (SoftmaxPolicy, {'temperature': 0.9}),
-    'ucb1': (UCB1Policy, {}),
+    # 'ucb1': (UCB1Policy, {}),
+    # 'exp3': (Exp3Policy, {}),
+    # 'exp3 (gamma=0.01)': (Exp3Policy, {'gamma': 0.01}),
+    'exp3 (gamma=0.05)': (Exp3Policy, {'gamma': 0.05}),
+    'exp3 (gamma=0.07)': (Exp3Policy, {'gamma': 0.07}),
+    'exp3 (gamma=0.1)': (Exp3Policy, {'gamma': 0.1}),
+    'exp3 (gamma=0.2)': (Exp3Policy, {'gamma': 0.2}),
+    'exp3 (gamma=0.3)': (Exp3Policy, {'gamma': 0.3}),
+    # 'exp3 (gamma=0.4)': (Exp3Policy, {'gamma': 0.4}),
+    # 'exp3 (gamma=0.5)': (Exp3Policy, {'gamma': 0.5}),
 }
 
 
@@ -147,8 +159,8 @@ def plot_results(history, bandit_cls, nb_bandits) -> None:
         for key, value in subplot_values.items():
             row.plot(value, label=key)
         row.legend()
-        if len(value) > 500:  # make it easier to read when many steps
-            row.set_xscale('log')
+        # if len(value) > 500:  # make it easier to read when many steps
+        #     row.set_xscale('log')
         row.grid()
 
     plt.xlabel('Iterations')
@@ -183,8 +195,8 @@ def plot_debug(history, bandit_cls, nb_bandits) -> None:
 def main(args):
     # create some bandits
     bandit_cls = BANDITS[args.bandit_type]
-    nb_bandits = args.nb_bandits
-    bandits = bandit_cls.build(nb_bandits)
+    num_bandits = args.num_bandits
+    bandits = bandit_cls.build(num_bandits)
     if len(bandits) <= 10:
         print_bandit_summary(bandits)
 
@@ -199,15 +211,15 @@ def main(args):
         for _ in range(args.trials):
             policy_results.append(agent.train(args.steps))
         results[name] = policy_results
-    plot_results(results, bandit_cls, nb_bandits)
+    plot_results(results, bandit_cls, num_bandits)
     if DEBUG:
-        plot_debug(results, bandit_cls, nb_bandits)
+        plot_debug(results, bandit_cls, num_bandits)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--nb_bandits', type=int, default=10)
-    parser.add_argument('--bandit_type', choices=['bernoulli', 'gaussian'], default='bernoulli')
+    parser.add_argument('--num-bandits', type=int, default=10)
+    parser.add_argument('--bandit-type', choices=['bernoulli', 'gaussian'], default='bernoulli')
     parser.add_argument('--steps', type=int, default=1000, help='The number of steps to train on')
     parser.add_argument('--trials', type=int, default=5, help='The number of trials to run for each algorithm')
     main(parser.parse_args())
