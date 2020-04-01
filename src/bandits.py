@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-import numpy as np
 from typing import List
+
+import numpy as np
+
 
 NON_STATIONARY_DELTA = 0.001  # how much to shift bandit probabilities
 

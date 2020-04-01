@@ -4,8 +4,8 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bandits import Bandit, BernoulliBandit, GaussianBandit
-from policies import Policy, RandomPolicy, EpsilonGreedyPolicy, EpsilonGreedyWeightedPolicy, SoftmaxPolicy, UCB1Policy, Exp3Policy
+from src.bandits import Bandit, BernoulliBandit, GaussianBandit
+from src.policies import Policy, EpsilonGreedyPolicy, Exp3Policy
 
 
 DEBUG = True
