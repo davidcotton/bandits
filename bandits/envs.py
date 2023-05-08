@@ -50,7 +50,6 @@ class GaussianEnv(Env):
         pass
 
 
-
 # NON_STATIONARY_DELTA = 0.001  # how much to shift bandit probabilities
 #
 #
@@ -108,7 +107,7 @@ class GaussianEnv(Env):
 #     Each gaussian bandit has its own random mean from which rewards come."""
 #
 #     def pull(self) -> float:
-#         # using our preset random mean & unit variance, randomly select from a gaussian
+#         # using our preset random mean & unit variance, randomly sample from a gaussian
 #         spin = np.random.normal(self.p, 1.0)
 #         return spin
 #

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from bandits.bandits import Bandit, Bandits
+from bandits.bandits import Bandits
 from bandits.envs import Env
 from bandits.transition import Transition
 
@@ -58,10 +58,10 @@ class Runner:
 # class Agent:
 #     """Wrapper around the selector and bandits."""
 #
-#     def __init__(self, bandits: List[Bandit], selector: Selector, debug=False) -> None:
+#     def __init__(self, bandits: List[Bandit], selector: Sampler, debug=False) -> None:
 #         super().__init__()
 #         self.bandits: List[Bandit] = bandits
-#         self.selector: Selector = selector
+#         self.selector: Sampler = selector
 #         self.debug = debug
 #
 #     def train(self, nb_steps: int) -> dict:

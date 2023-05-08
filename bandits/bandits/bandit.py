@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import List, Mapping
 
-import torch
 from torch import Tensor
 
+from bandits.samplers import (
+    EpsilonGreedySampler,
+    Sampler,
+)
 from bandits.transition import Transition
 
 
@@ -11,7 +14,10 @@ class Bandit(ABC):
     DEFAULT_CONFIG = {
         "n_arms": 2,
         # "k": 1,
-        # "actor": GreedySelector,
+        "sampler": {
+            # "class": GreedySampler,
+            "class": EpsilonGreedySampler,
+        },
     }
 
     def __init__(self, **kwargs):
@@ -21,6 +27,8 @@ class Bandit(ABC):
             **self.DEFAULT_CONFIG,  # child config
             **kwargs,  # custom config (if defined)
         }
+        sampler_config = self.config["sampler"]
+        self.sampler: Sampler = sampler_config["class"](**sampler_config.get("params", {}))
 
     @abstractmethod
     def act(self, obs: Tensor) -> Tensor:
@@ -35,22 +43,3 @@ class Bandit(ABC):
 
 
 Bandits = Mapping[str, Bandit]
-
-
-class SimpleQBandit(Bandit):
-    DEFAULT_CONFIG = {
-        # "selector": EpsilonGreedySelector,
-        "epsilon": 0.1,
-        "alpha": 0.1,
-    }
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.q = torch.zeros(self.n_arms)
-        self.arm_visits = torch.ones(self.n_arms)
-
-    def act(self, obs: Tensor) -> Tensor:
-        pass
-
-    def update(self, batch: List[Transition]) -> dict:
-        return super().update(batch)
