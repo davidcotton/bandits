@@ -11,39 +11,30 @@ See `policies.py`
 
 
 ## Requirements
-- Python 3.6
-  - pip
-  - virtualenv
+- Python 3.10
+  - poetry
 
 
 ## Installation
-1. Optionally create a virtualenv called `venv`
+1. Use Poetry to install dependencies
 
-        virtualenv venv
-        
-1. Activate the virtualenv (if you created one)
-
-        source venv/bin/activate
-        
-1. Install dependencies
-
-        pip install -r requirements.txt
+        poetry install
 
 
 ## Usage
 Run the experimenter from `main.py` with command-line arguments
 
-    python3 main.py {options}
+    poetry run main.py {options}
     
 For example
 
-    python3 main.py --nb_bandits=100 --bandit_type=gaussian --steps=500
+    poetry run main.py --nb_bandits=100 --bandit_type=gaussian --steps=500
     
 Options
 
-| Flag | Parameters | Description | Required | Default Value | 
-| ---- | ---------- | ----------- | -------- | ------------- |
-| nb_bandits | int | The number of bandit arms | N | 10 |
-| bandit_type | {bernoulli, gaussian} | How the bandit distributes rewards | N | bernoulli |
-| steps | int | How many steps to train for | N | 1000 |
-| trials | int | How many to times to repeat the experiment | N | 5 |
+| Flag        | Parameters            | Description                                | Required | Default Value | 
+|-------------|-----------------------|--------------------------------------------|----------|---------------|
+| nb_bandits  | int                   | The number of bandit arms                  | N        | 10            |
+| bandit_type | {bernoulli, gaussian} | How the bandit distributes rewards         | N        | bernoulli     |
+| steps       | int                   | How many steps to train for                | N        | 1000          |
+| trials      | int                   | How many to times to repeat the experiment | N        | 5             |
