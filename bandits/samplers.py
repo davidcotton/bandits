@@ -23,7 +23,7 @@ class Sampler(ABC):
         # self.k = int(self.config["k"])
 
     @abstractmethod
-    def sample(self, probs: Tensor) -> Tensor:
+    def sample(self, logits: Tensor) -> Tensor:
         pass
 
     @property
@@ -37,7 +37,7 @@ class Sampler(ABC):
 
 class RandomSampler(Sampler):
     """Randomly sample an action."""
-    def sample(self, probs: Tensor) -> Tensor:
+    def sample(self, logits: Tensor) -> Tensor:
         return np.random.choice(self.n_arms)
 
 
@@ -65,8 +65,8 @@ class RandomSampler(Sampler):
 
 
 class GreedySampler(Sampler):
-    def sample(self, probs: Tensor) -> Tensor:
-        _, actions = probs.topk(k=1)
+    def sample(self, logits: Tensor) -> Tensor:
+        _, actions = logits.topk(k=1)
         return actions
 
 
@@ -80,8 +80,8 @@ class EpsilonGreedySampler(Sampler):
         super().__init__(**kwargs)
         self.rand_actions_dist = torch.ones(self.n_arms)
 
-    def sample(self, probs: Tensor) -> Tensor:
-        batch_size = probs.shape[0]
+    def sample(self, logits: Tensor) -> Tensor:
+        batch_size = logits.shape[0]
         # boolean vector mask of which actions are greedy (1) vs. random (0)
         random_masks = torch.gt(torch.rand(size=(batch_size, self.k)), self.epsilon).int()
         # vector of random actions
@@ -89,7 +89,7 @@ class EpsilonGreedySampler(Sampler):
         # sample w/o replacement
         random_actions = rand_actions_dist.multinomial(self.k, replacement=False)
         # vector of greedy actions
-        _, greedy_actions = probs.topk(k=self.k)
+        _, greedy_actions = logits.topk(k=self.k)
         # merge random & greedy actions
         actions = (greedy_actions * random_masks) + ((random_masks ^ 1) * random_actions)
         return actions
@@ -131,8 +131,8 @@ class SoftmaxSampler(Sampler):
         "tau": 0.4,
     }
 
-    def sample(self, probs: Tensor) -> Tensor:
-        return torch.softmax(probs / self.tau, dim=1)
+    def sample(self, logits: Tensor) -> Tensor:
+        return torch.softmax(logits / self.tau, dim=1)
 
     @property
     def tau(self) -> float:

@@ -26,13 +26,13 @@ class BernoulliEnv(Env):
 
     def reset(self) -> Tuple[Tensor, bool]:
         self.probs = torch.rand(self.n_arms)
-        obs = torch.tensor([])
+        obs = torch.zeros(self.n_arms)
         return obs, False
 
     def step(self, actions: Tensor) -> Tuple[Tensor, Tensor, bool, dict]:
+        next_obs = torch.zeros(self.n_arms)
         p = torch.rand(1)
-        next_obs = torch.tensor([0.0])
-        rewards = 1.0 if p < self.probs[actions] else 0.0
+        rewards = torch.tensor(1.0 if p < self.probs[actions] else 0.0)
         terminal = False
         info = {}
         return next_obs, rewards, terminal, info
@@ -96,8 +96,8 @@ class GaussianEnv(Env):
 #     @staticmethod
 #     def build(nb_bandits) -> List[Bandit]:
 #         """Build a group of Bernoulli bandits."""
-#         probs = np.random.uniform(low=0.0, high=1.0, size=nb_bandits)
-#         bandits = [BernoulliBandit(p, is_nonstationary=False) for p in probs]
+#         logits = np.random.uniform(low=0.0, high=1.0, size=nb_bandits)
+#         bandits = [BernoulliBandit(p, is_nonstationary=False) for p in logits]
 #         return bandits
 #
 #
@@ -115,7 +115,7 @@ class GaussianEnv(Env):
 #     def build(nb_bandits) -> List[Bandit]:
 #         """Build a collection of Gaussian bandits."""
 #         mean, stddev = 0.0, 1.0
-#         probs = np.random.normal(mean, stddev, nb_bandits)
-#         normalised_probs = (probs - probs.mean(axis=0)) / probs.std(axis=0)
+#         logits = np.random.normal(mean, stddev, nb_bandits)
+#         normalised_probs = (logits - logits.mean(axis=0)) / logits.std(axis=0)
 #         bandits = [GaussianBandit(p, is_nonstationary=False) for p in normalised_probs]
 #         return bandits

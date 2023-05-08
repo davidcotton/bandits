@@ -33,6 +33,9 @@ class QBandit(Bandit):
             self.visits.scatter_add_(
                 dim=0, index=actions, src=torch.ones_like(actions, dtype=self.visits.dtype)
             )
+            if actions.ndim == 0 and rewards.ndim == 0:
+                actions = actions.unsqueeze(0)
+                rewards = rewards.unsqueeze(0)
             for a, r in zip(actions, rewards):
                 q = self.q[a] + (1 / self.visits[a] * (r - self.q[a]))
                 self.q[a] = q

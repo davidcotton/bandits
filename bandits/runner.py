@@ -27,7 +27,7 @@ class Runner:
             with mlflow.start_run() as run:
                 obs, terminal = self.env.reset()
                 for _ in tqdm(range(self.n_steps)):
-                    actions = bandit.act(obs)
+                    actions = bandit.act(obs.unsqueeze(0)).squeeze()
                     next_obs, rewards, terminal, info = self.env.step(actions)
                     batch = [Transition(obs, actions, next_obs, rewards, terminal)]
                     step_metrics = bandit.update(batch)
@@ -35,6 +35,7 @@ class Runner:
                     for k, v in step_metrics.items():
                         metrics[k].append(v)
                     obs = next_obs
+
             run_metrics = {}
             for k, v in metrics.items():
                 run_metrics[f"train_{k}_mean"] = np.mean(v).item()
