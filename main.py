@@ -14,32 +14,32 @@ BANDITS = {
     'gaussian': GaussianBandit,
 }
 POLICIES = {
-    # 'random': (RandomPolicy, {}),
+    # 'random': (RandomSelector, {}),
     'epsilon greedy (10%)': (EpsilonGreedyPolicy, {'epsilon': 0.1}),
-    # # 'epsilon greedy (5%)': (EpsilonGreedyPolicy, {'epsilon': 0.05}),
+    # # 'epsilon greedy (5%)': (EpsilonGreedySelector, {'epsilon': 0.05}),
     'epsilon greedy (1%)': (EpsilonGreedyPolicy, {'epsilon': 0.01}),
-    # # 'epsilon weighted (alpha 0.1)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.1}),
-    # # 'epsilon weighted (alpha 0.01)': (EpsilonGreedyWeightedPolicy, {'epsilon': 0.1, 'alpha': 0.01}),
-    # # 'softmax (0.01)': (SoftmaxPolicy, {'temperature': 0.01}),
-    # 'softmax (0.1)': (SoftmaxPolicy, {'temperature': 0.1}),
-    # # 'softmax (0.2)': (SoftmaxPolicy, {'temperature': 0.2}),
-    # # 'softmax (0.3)': (SoftmaxPolicy, {'temperature': 0.3}),
-    # 'softmax (0.4)': (SoftmaxPolicy, {'temperature': 0.4}),
-    # # 'softmax (0.5)': (SoftmaxPolicy, {'temperature': 0.5}),
-    # # 'softmax (0.6)': (SoftmaxPolicy, {'temperature': 0.6}),
-    # # 'softmax (0.7)': (SoftmaxPolicy, {'temperature': 0.7}),
-    # # 'softmax (0.8)': (SoftmaxPolicy, {'temperature': 0.8}),
-    # # 'softmax (0.9)': (SoftmaxPolicy, {'temperature': 0.9}),
-    # 'ucb1': (UCB1Policy, {}),
-    # 'exp3': (Exp3Policy, {}),
-    # 'exp3 (gamma=0.01)': (Exp3Policy, {'gamma': 0.01}),
+    # # 'epsilon weighted (alpha 0.1)': (EpsilonGreedyWeightedSelector, {'epsilon': 0.1, 'alpha': 0.1}),
+    # # 'epsilon weighted (alpha 0.01)': (EpsilonGreedyWeightedSelector, {'epsilon': 0.1, 'alpha': 0.01}),
+    # # 'softmax (0.01)': (SoftmaxSelector, {'temperature': 0.01}),
+    # 'softmax (0.1)': (SoftmaxSelector, {'temperature': 0.1}),
+    # # 'softmax (0.2)': (SoftmaxSelector, {'temperature': 0.2}),
+    # # 'softmax (0.3)': (SoftmaxSelector, {'temperature': 0.3}),
+    # 'softmax (0.4)': (SoftmaxSelector, {'temperature': 0.4}),
+    # # 'softmax (0.5)': (SoftmaxSelector, {'temperature': 0.5}),
+    # # 'softmax (0.6)': (SoftmaxSelector, {'temperature': 0.6}),
+    # # 'softmax (0.7)': (SoftmaxSelector, {'temperature': 0.7}),
+    # # 'softmax (0.8)': (SoftmaxSelector, {'temperature': 0.8}),
+    # # 'softmax (0.9)': (SoftmaxSelector, {'temperature': 0.9}),
+    # 'ucb1': (UCB1Selector, {}),
+    # 'exp3': (Exp3Selector, {}),
+    # 'exp3 (gamma=0.01)': (Exp3Selector, {'gamma': 0.01}),
     'exp3 (gamma=0.05)': (Exp3Policy, {'gamma': 0.05}),
     'exp3 (gamma=0.07)': (Exp3Policy, {'gamma': 0.07}),
     'exp3 (gamma=0.1)': (Exp3Policy, {'gamma': 0.1}),
     'exp3 (gamma=0.2)': (Exp3Policy, {'gamma': 0.2}),
     'exp3 (gamma=0.3)': (Exp3Policy, {'gamma': 0.3}),
-    # 'exp3 (gamma=0.4)': (Exp3Policy, {'gamma': 0.4}),
-    # 'exp3 (gamma=0.5)': (Exp3Policy, {'gamma': 0.5}),
+    # 'exp3 (gamma=0.4)': (Exp3Selector, {'gamma': 0.4}),
+    # 'exp3 (gamma=0.5)': (Exp3Selector, {'gamma': 0.5}),
 }
 
 
@@ -110,7 +110,6 @@ class Agent:
     def act(self) -> Tuple[float, int]:
         """
         Select a bandit with our policy, take the action and receive the reward.
-
         :return: a tuple of the reward received and the bandit arm chosen
         """
         bandit_idx = self.policy.select_action()
