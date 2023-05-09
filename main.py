@@ -3,7 +3,7 @@ from datetime import datetime
 
 import mlflow
 
-from bandits.bandits import QBandit
+from bandits.bandits import IncrementalQLearner
 from bandits.bandits.exp3_bandit import Exp3Bandit
 from bandits.envs import BernoulliEnv
 from bandits.runner import Runner
@@ -44,7 +44,7 @@ DEFAULT_MLFLOW_SERVER_URI = "http://localhost:5000"
 def main(args):
     env = BernoulliEnv(args.n_arms)
     bandits = {
-        "simple_q_bandit": QBandit(),
+        "simple_q_bandit": IncrementalQLearner(),
     }
     runner = Runner(env, bandits, args.n_steps)
 
