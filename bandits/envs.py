@@ -31,10 +31,15 @@ class BernoulliEnv(Env):
 
     def step(self, actions: Tensor) -> Tuple[Tensor, Tensor, bool, dict]:
         next_obs = torch.zeros(self.n_arms)
-        p = torch.rand(1)
-        rewards = torch.tensor(1.0 if p < self.probs[actions] else 0.0)
+        rewards = []
+        for a in actions:
+            p = torch.rand(1)
+            rewards.append(1.0 if p < self.probs[a] else 0.0)
+        rewards = torch.tensor(rewards)
         terminal = False
-        info = {}
+        info = {
+            "regret": torch.ones_like(rewards) - rewards,
+        }
         return next_obs, rewards, terminal, info
 
 

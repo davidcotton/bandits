@@ -3,6 +3,7 @@ from collections import defaultdict
 import mlflow
 import numpy as np
 import pandas as pd
+from torch import Tensor
 from tqdm import tqdm
 
 from bandits.bandits import Bandits
@@ -27,11 +28,15 @@ class Runner:
             with mlflow.start_run() as run:
                 obs, terminal = self.env.reset()
                 for _ in tqdm(range(self.n_steps)):
-                    actions = bandit.act(obs.unsqueeze(0)).squeeze()
+                    actions = bandit.act(obs.unsqueeze(0)).squeeze(1)
                     next_obs, rewards, terminal, info = self.env.step(actions)
                     batch = [Transition(obs, actions, next_obs, rewards, terminal)]
                     step_metrics = bandit.update(batch)
                     metrics["reward"].append(rewards.sum().item())
+                    for k, v in info.items():
+                        if isinstance(v, Tensor):
+                            v = v.mean().item()
+                        metrics[k].append(v)
                     for k, v in step_metrics.items():
                         metrics[k].append(v)
                     obs = next_obs
