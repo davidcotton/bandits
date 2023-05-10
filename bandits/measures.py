@@ -8,7 +8,7 @@ from typing import Callable, Mapping
 Measures = Mapping[str, Callable]
 
 
-def build_measures(config):
+def build_measures(config: dict) -> Measures:
     measures_config = config["measures"]
     measures = {}
     for name, cfg in measures_config.items():
