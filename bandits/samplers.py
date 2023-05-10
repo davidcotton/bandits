@@ -23,7 +23,7 @@ class Sampler(ABC):
         # self.k = int(self.config["k"])
 
     @abstractmethod
-    def sample(self, logits: Tensor) -> Tensor:
+    def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
         pass
 
     @property
@@ -37,12 +37,12 @@ class Sampler(ABC):
 
 class RandomSampler(Sampler):
     """Randomly sample an action."""
-    def sample(self, logits: Tensor) -> Tensor:
+    def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
         return np.random.choice(self.n_arms)
 
 
 class GreedySampler(Sampler):
-    def sample(self, logits: Tensor) -> Tensor:
+    def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
         _, actions = logits.topk(k=self.k)
         return actions
 
@@ -57,7 +57,7 @@ class EpsilonGreedySampler(Sampler):
         super().__init__(**kwargs)
         self.rand_actions_dist = torch.ones(self.n_arms)
 
-    def sample(self, logits: Tensor) -> Tensor:
+    def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
         batch_size = logits.shape[0]
         # boolean vector mask of which actions are greedy (1) vs. random (0)
         random_masks = torch.gt(torch.rand(size=(batch_size, self.k)), self.epsilon).int()
@@ -84,7 +84,7 @@ class SoftmaxSampler(Sampler):
         "tau": 0.4,
     }
 
-    def sample(self, logits: Tensor) -> Tensor:
+    def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
         return torch.softmax(logits / self.tau, dim=1)
 
     @property
@@ -93,55 +93,20 @@ class SoftmaxSampler(Sampler):
 
 
 class UCB1Sampler(Sampler):
-    """Upper Confidence Bounds."""
     DEFAULT_CONFIG = {
-        "alpha": 0.1,
+        "confidence": 2.0,
     }
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.total_visits = 0
-
-    def select_action(self) -> int:
-        self.total_visits += 1
-
-        # initialise: make sure we have visited every action
-        if np.min(self.visits) == 0:
-            for idx, count in enumerate(self.visits):
-                if count == 0:
-                    break
-        else:
-            ucb_values = self.q / self.visits + self.upper_bound(self.total_visits, self.visits)
-            idx = int(np.argmax(ucb_values))
-
-        return idx
-
-    @staticmethod
-    def upper_bound(step: int, visits: np.array) -> float:
-        """Calculate the upper confidence bound for a vector of bandit arms.
-
-        :param step: the total number of visits to ALL arms
-        :param visits: a vector of number of visits to each arm
-        :return: the UCB value
-        """
-        return np.sqrt(2 * log(step) / visits)
-
-    def update(self, bandit: int, reward: float) -> None:
-        self.visits[bandit] += 1
-        self.total_rewards[bandit] += reward
-
-        total_reward = self.q[bandit] + reward
-        # avg_reward = self.total_rewards[bandit] / self.visits[bandit]
-        avg_reward = self.q[bandit] + (1 / self.visits[bandit]) * (reward - self.q[bandit])
-        weighted_q = self.q[bandit] + self.alpha * (reward - self.q[bandit])
-
-        if self.debug:
-            self.total_rewards[bandit] = total_reward
-            self.avg_rewards[bandit] = avg_reward
-            self.weighted_q[bandit] = weighted_q
-
-        self.q[bandit] = weighted_q
+    def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
+        log_total_visits = self.confidence * torch.log(visits.sum())
+        actions_batch = []
+        for batch in logits:
+            uncertainty = torch.sqrt(log_total_visits / visits)
+            ucb = batch + uncertainty
+            _, actions = ucb.topk(k=self.k)
+            actions_batch.append(actions)
+        return torch.stack(actions_batch)
 
     @property
-    def alpha(self) -> float:
-        return float(self.config["alpha"])
+    def confidence(self) -> float:
+        return float(self.config["confidence"])

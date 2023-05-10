@@ -64,7 +64,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', choices=['bernoulli', 'gaussian'], default='bernoulli')
     parser.add_argument("--n-arms", "-n", type=int, default=10)
-    parser.add_argument('--n-steps', type=int, default=10, help='The number of steps to train on')
+    parser.add_argument('--n-steps', type=int, default=1000, help='The number of steps to train on')
     parser.add_argument('--n-trials', type=int, default=5, help='The number of trials to run for each algorithm')
     parser.add_argument(
         "--mlflow_server_uri",
