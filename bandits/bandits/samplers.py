@@ -84,7 +84,16 @@ class SoftmaxSampler(Sampler):
     }
 
     def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
-        return torch.softmax(logits / self.tau, dim=1)
+        probs = torch.softmax(logits / self.tau, dim=1)
+        _, actions = probs.topk(k=self.k)
+        return actions
+
+        # actions_batch = []
+        # for batch in logits:
+        #     probs = torch.softmax(batch / self.tau, dim=0)
+        #     _, actions = probs.topk(k=self.k)
+        #     actions_batch.append(actions)
+        # return torch.stack(actions_batch)
 
     @property
     def tau(self) -> float:

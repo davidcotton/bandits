@@ -4,12 +4,44 @@ global:
 environment:
   class: BernoulliEnv
 models:
-  epsilon greedy (10%):
+  EpsilonGreedy (10%):
     class: IncrementalQLearner
     params:
-      epsilon: 0.1
-  epsilon greedy (1%):
+      sampler:
+        class: EpsilonGreedySampler
+        params:
+          epsilon: 0.1
+  EpsilonGreedy (1%):
     class: IncrementalQLearner
     params:
-      epsilon: 0.01
+      sampler:
+        class: EpsilonGreedySampler
+        params:
+          epsilon: 0.01
+  Softmax (0.1):
+    class: IncrementalQLearner
+    params:
+      sampler:
+        class: SoftmaxSampler
+        params:
+          tau: 0.1
+  Softmax (0.2):
+    class: IncrementalQLearner
+    params:
+      sampler:
+        class: SoftmaxSampler
+        params:
+          tau: 0.2
+  Softmax (0.4):
+    class: IncrementalQLearner
+    params:
+      sampler:
+        class: SoftmaxSampler
+        params:
+          tau: 0.4
+  UCB (c=2.0):
+    class: IncrementalQLearner
+    params:
+      sampler:
+        class: UCBSampler
 #measures:

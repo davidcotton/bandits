@@ -1,3 +1,4 @@
+import importlib
 from abc import ABC, abstractmethod
 from typing import List, Mapping
 
@@ -9,6 +10,7 @@ from bandits.bandits.samplers import (
     GreedySampler,
 )
 from bandits.transition import Transition
+from bandits.utils import extract_module
 
 
 class Bandit(ABC):
@@ -30,7 +32,11 @@ class Bandit(ABC):
             **kwargs,  # custom config (if defined)
         }
         sampler_config = self.config["sampler"]
-        self.sampler: Sampler = sampler_config["class"](**sampler_config.get("params", {}))
+        sampler_cls = sampler_config["class"]
+        if isinstance(sampler_cls, str):
+            namespace, import_ = extract_module(sampler_cls, "bandits.bandits")
+            sampler_cls = getattr(importlib.import_module(namespace), import_)
+        self.sampler: Sampler = sampler_cls(**sampler_config.get("params", {}))
 
     @abstractmethod
     def act(self, obs: Tensor) -> Tensor:

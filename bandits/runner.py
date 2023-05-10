@@ -26,6 +26,7 @@ class Runner:
         for bandit_name, bandit in tqdm(self.bandits.items()):
             run_params = {
                 "bandit": bandit_name,
+                **self.config["global"]
             }
             metrics = defaultdict(list)
             with mlflow.start_run() as run:
