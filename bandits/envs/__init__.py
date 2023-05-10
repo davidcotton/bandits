@@ -2,6 +2,7 @@ __all__ = [
     "Env",
     "BernoulliEnv",
     "GaussianEnv",
+    "build_env",
 ]
 
 import importlib

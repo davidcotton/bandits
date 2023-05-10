@@ -3,11 +3,11 @@ from datetime import datetime
 
 import mlflow
 
-from bandits.bandits import get_bandits
+from bandits.bandits import get_bandits, EpsilonGreedySampler
 from bandits.bandits.exp3_bandit import Exp3Bandit
-from bandits.envs import BernoulliEnv, build_env
+from bandits.envs import build_env
+from bandits.measures import build_measures
 from bandits.runner import Runner
-from bandits.bandits import EpsilonGreedySampler
 from bandits.utils import get_summaries_dir, load_config
 
 POLICIES = {
@@ -38,7 +38,7 @@ POLICIES = {
     # 'exp3 (gamma=0.4)': (Exp3Bandit, {'gamma': 0.4}),
     # 'exp3 (gamma=0.5)': (Exp3Bandit, {'gamma': 0.5}),
 }
-DEFAULT_MLFLOW_SERVER_URI = "http://localhost:5000"
+DEFAULT_MLFLOW_SERVER_URI = "http://127.0.0.1:5000"
 
 
 def main(args):
@@ -49,7 +49,8 @@ def main(args):
 
     env = build_env(config)
     bandits = get_bandits(config)
-    runner = Runner(config, env, bandits)
+    measures = build_measures(config)
+    runner = Runner(config, env, bandits, measures)
 
     # run experiment
     mlflow.set_tracking_uri(args.mlflow_server_uri)

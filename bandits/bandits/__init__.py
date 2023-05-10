@@ -8,6 +8,7 @@ __all__ = [
     "RandomSampler",
     "SoftmaxSampler",
     "UCBSampler",
+    "get_bandits",
 ]
 
 import importlib
@@ -38,6 +39,6 @@ def get_bandits(config):
         namespace, import_ = extract_module(cfg["class"], "bandits.bandits")
         model_cls = getattr(importlib.import_module(namespace), import_)
         model_params = cfg.get("params", {})
-        # bandits[name] = model_cls(**model_params)
-        bandits[name] = model_cls, model_params
+        bandits[name] = model_cls(**model_params)
+        # bandits[name] = model_cls, model_params
     return bandits

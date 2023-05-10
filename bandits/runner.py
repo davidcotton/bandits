@@ -8,15 +8,18 @@ from tqdm import tqdm
 
 from bandits.bandits import Bandits
 from bandits.envs import Env
+from bandits.measures import Measures
 from bandits.transition import Transition
 
 
 class Runner:
-    def __init__(self, config: dict, env: Env, bandits: Bandits) -> None:
+    def __init__(self, config: dict, env: Env, bandits: Bandits, measures: Measures) -> None:
         super().__init__()
+        self.config = config
+        self.n_steps = int(config["global"]["n_steps"])
         self.env: Env = env
         self.bandits: Bandits = bandits
-        self.n_steps = int(config["global"]["n_steps"])
+        self.measures: Measures = measures
 
     def run(self) -> dict:
         results = []
@@ -41,14 +44,14 @@ class Runner:
                         metrics[k].append(v)
                     obs = next_obs
 
-            run_metrics = {}
-            for k, v in metrics.items():
-                run_metrics[f"train_{k}_mean"] = np.mean(v).item()
-                run_metrics[f"train_{k}_sum"] = np.sum(v).item()
-                run_metrics[f"train_{k}_std"] = np.std(v).item()
-            mlflow.log_metrics(run_metrics)
-            mlflow.log_params(run_params)
-            results.append({**run_metrics, **run_params})
+                run_metrics = {}
+                for k, v in metrics.items():
+                    run_metrics[f"train_{k}_mean"] = np.mean(v).item()
+                    run_metrics[f"train_{k}_sum"] = np.sum(v).item()
+                    run_metrics[f"train_{k}_std"] = np.std(v).item()
+                mlflow.log_metrics(run_metrics)
+                mlflow.log_params(run_params)
+                results.append({**run_metrics, **run_params})
 
         summary = (
             pd.DataFrame.from_records(results)
