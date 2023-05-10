@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from typing import List
 
 import torch
@@ -50,7 +49,6 @@ class FixedQLearner(Bandit):
 
         return metrics
 
-    @abstractmethod
     def _update(self, action: int, reward: float) -> float:
         return self.q[action] + (1 / self.visits[action] * (reward - self.q[action]))
 

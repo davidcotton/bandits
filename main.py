@@ -3,12 +3,12 @@ from datetime import datetime
 
 import mlflow
 
-from bandits.bandits import IncrementalQLearner
+from bandits.bandits import get_bandits
 from bandits.bandits.exp3_bandit import Exp3Bandit
-from bandits.envs import BernoulliEnv
+from bandits.envs import BernoulliEnv, build_env
 from bandits.runner import Runner
-from bandits.samplers import EpsilonGreedySampler
-
+from bandits.bandits import EpsilonGreedySampler
+from bandits.utils import get_summaries_dir, load_config
 
 POLICIES = {
     # 'random': (RandomSampler, {}),
@@ -42,30 +42,35 @@ DEFAULT_MLFLOW_SERVER_URI = "http://localhost:5000"
 
 
 def main(args):
-    env = BernoulliEnv(args.n_arms)
-    bandits = {
-        "simple_q_bandit": IncrementalQLearner(),
-    }
-    runner = Runner(env, bandits, args.n_steps)
+    config = load_config(args.experiment)
+    required_config_keys = ("global", "runner", "environment", "models", "measures")
+    for k in required_config_keys:
+        config.setdefault(k, {})
+
+    env = build_env(config)
+    bandits = get_bandits(config)
+    runner = Runner(config, env, bandits)
 
     # run experiment
-    # mlflow.set_tracking_uri(args.mlflow_server_uri)
-    # experiment_name = f"{args.experiment}"
-    # mlflow.set_experiment(experiment_name)
+    mlflow.set_tracking_uri(args.mlflow_server_uri)
+    experiment_name = f"{args.experiment}"
+    mlflow.set_experiment(experiment_name)
     results = runner.run()
     if "summary" in results:
         summary = results["summary"]
-        # filename = f"{datetime.today().strftime('%Y-%m-%d-%H%M')}_{experiment_name}.csv"
-        # summary.to_csv(get_summaries_dir() / filename)
+        filename = f"{datetime.today().strftime('%Y-%m-%d-%H%M')}_{experiment_name}.csv"
+        summary.to_csv(get_summaries_dir() / filename)
         print("\n", summary.to_markdown())
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env', choices=['bernoulli', 'gaussian'], default='bernoulli')
-    parser.add_argument("--n-arms", "-n", type=int, default=10)
-    parser.add_argument('--n-steps', type=int, default=1000, help='The number of steps to train on')
-    parser.add_argument('--n-trials', type=int, default=5, help='The number of trials to run for each algorithm')
+    parser.add_argument(
+        "--experiment",
+        "-e",
+        required=True,
+        help="The name of the experiment configuration file to use."
+    )
     parser.add_argument(
         "--mlflow_server_uri",
         default=DEFAULT_MLFLOW_SERVER_URI,

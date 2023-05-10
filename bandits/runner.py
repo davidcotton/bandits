@@ -12,11 +12,11 @@ from bandits.transition import Transition
 
 
 class Runner:
-    def __init__(self, env: Env, bandits: Bandits, n_steps: int) -> None:
+    def __init__(self, config: dict, env: Env, bandits: Bandits) -> None:
         super().__init__()
         self.env: Env = env
         self.bandits: Bandits = bandits
-        self.n_steps = int(n_steps)
+        self.n_steps = int(config["global"]["n_steps"])
 
     def run(self) -> dict:
         results = []
@@ -61,88 +61,6 @@ class Runner:
         }
 
 
-# class Agent:
-#     """Wrapper around the selector and bandits."""
-#
-#     def __init__(self, bandits: List[Bandit], selector: Sampler, debug=False) -> None:
-#         super().__init__()
-#         self.bandits: List[Bandit] = bandits
-#         self.selector: Sampler = selector
-#         self.debug = debug
-#
-#     def train(self, nb_steps: int) -> dict:
-#         """
-#         Train the agent for a number of steps.
-#
-#         :param nb_steps: the number of steps to train for
-#         :return: the training history
-#         """
-#         print(f'Training {self.selector.__class__.__name__} for {nb_steps:,} steps')
-#         results = {
-#             'avg_reward': [],
-#             'avg_regret': [],
-#             'params': {
-#                 'total_rewards': {},
-#                 'avg_rewards': {},
-#                 'weighted_q': {},
-#             }
-#         }
-#         if self.debug:
-#             for key in results['params'].keys():
-#                 for i in range(len(self.bandits)):
-#                     results['params'][key][i] = []
-#
-#         optimal_bandit = max(bandit for bandit in self.bandits)
-#         avg_reward = 0.0
-#         avg_regret = 0.0
-#
-#         for n in range(1, nb_steps + 1):
-#             reward, bandit_idx = self.act()
-#             avg_reward = self.incremental_mean(avg_reward, reward, n)
-#             results['avg_reward'].append(avg_reward)
-#
-#             # measure regret
-#             if self.bandits[0].is_nonstationary:  # if bandits aren't stationary we'll need to keep checking this
-#                 optimal_bandit = max(bandit for bandit in self.bandits)
-#             regret = optimal_bandit.p - self.bandits[bandit_idx].p
-#             avg_regret = self.incremental_mean(avg_regret, regret, n)
-#             results['avg_regret'].append(avg_regret)
-#
-#             if self.debug:
-#                 try:
-#                     for i, value in enumerate(self.selector.total_rewards):
-#                         results['params']['total_rewards'][i].append(value)
-#                     for i, value in enumerate(self.selector.avg_rewards):
-#                         results['params']['avg_rewards'][i].append(value)
-#                     for i, value in enumerate(self.selector.q):
-#                         results['params']['weighted_q'][i].append(value)
-#                 except NameError:
-#                     pass
-#
-#         return results
-#
-#     @staticmethod
-#     def incremental_mean(mean, value, n):
-#         return mean + (value - mean) / n
-#
-#     def act(self) -> Tuple[float, int]:
-#         """
-#         Select a bandit with our selector, take the action and receive the reward.
-#         :return: a tuple of the reward received and the bandit arm chosen
-#         """
-#         bandit_idx = self.selector.select_action()
-#         reward = self.bandits[bandit_idx].pull()
-#         self.selector.update(bandit_idx, reward)
-#         return reward, bandit_idx
-#
-#     def print_estimates(self) -> None:
-#         print(' Real || Pred || Diff')
-#         for real, predicted in zip(self.bandits, self.selector.q):
-#             real = real.p
-#             diff = abs(real - predicted)
-#             print(f' {real:0.3f} | {predicted:0.3f} | {diff:0.3f}')
-#
-#
 # def print_bandit_summary(bandits: List[Bandit]) -> None:
 #     """Print a summary of the bandits randomly generated."""
 #     print()

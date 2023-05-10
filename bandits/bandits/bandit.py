@@ -3,9 +3,10 @@ from typing import List, Mapping
 
 from torch import Tensor
 
-from bandits.samplers import (
-    EpsilonGreedySampler,
+from bandits.bandits.samplers import (
     Sampler,
+    EpsilonGreedySampler,
+    GreedySampler,
 )
 from bandits.transition import Transition
 

@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from math import log
 
 import numpy as np
 import torch
@@ -92,7 +91,7 @@ class SoftmaxSampler(Sampler):
         return float(self.config["tau"])
 
 
-class UCB1Sampler(Sampler):
+class UCBSampler(Sampler):
     DEFAULT_CONFIG = {
         "confidence": 2.0,
     }

@@ -1,0 +1,15 @@
+global:
+  n_arms: 10
+  n_steps: 1000
+environment:
+  class: BernoulliEnv
+models:
+  epsilon greedy (10%):
+    class: IncrementalQLearner
+    params:
+      epsilon: 0.1
+  epsilon greedy (1%):
+    class: IncrementalQLearner
+    params:
+      epsilon: 0.01
+#measures:
