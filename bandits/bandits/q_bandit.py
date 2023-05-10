@@ -5,7 +5,6 @@ import torch
 from torch import Tensor
 
 from bandits.bandits.bandit import Bandit
-from bandits.samplers import EpsilonGreedySampler
 from bandits.transition import Transition
 
 
@@ -14,14 +13,15 @@ class AbstractQLearner(Bandit, ABC):
 
     DEFAULT_CONFIG = {
         "initial_q_value": 0.0,  # optional optimistic initialisation
-        "sampler": {
-            "class": EpsilonGreedySampler,
-            "params": {"epsilon": 0.1},
-        },
     }
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
+        self.config.update({
+            **AbstractQLearner.DEFAULT_CONFIG,  # parent config
+            **self.DEFAULT_CONFIG,  # child config
+            **kwargs,  # custom config (if defined)
+        })
         self.q = torch.full((self.n_arms,), self.config["initial_q_value"])
 
     def act(self, obs: Tensor) -> Tensor:
@@ -33,9 +33,9 @@ class AbstractQLearner(Bandit, ABC):
         metrics = super().update(batch)
         metrics.update(self._update(batch))
         metrics.update(**{
-            "q_min": self.q.min(),
-            "q_mean": self.q.mean(),
-            "q_max": self.q.max(),
+            "q_min": self.q.min().item(),
+            "q_mean": self.q.mean().item(),
+            "q_max": self.q.max().item(),
         })
         return metrics
 
@@ -52,7 +52,7 @@ class FixedQLearner(AbstractQLearner):
         self.visits = torch.ones(self.n_arms)
 
     def _update(self, batch: List[Transition]) -> dict:
-        metrics = super().update(batch)
+        metrics = super()._update(batch)
         for _, actions, _, rewards, _ in batch:
             self.visits.scatter_add_(
                 dim=0, index=actions, src=torch.ones_like(actions, dtype=self.visits.dtype)
@@ -76,8 +76,12 @@ class IncrementalQLearner(AbstractQLearner):
     }
 
     def _update(self, batch: List[Transition]) -> dict:
-        metrics = super().update(batch)
+        metrics = super()._update(batch)
         for _, actions, _, rewards, _ in batch:
+            if actions.ndim == 0:
+                actions = actions.unsqueeze(0)
+            if rewards.ndim == 0:
+                rewards = rewards.unsqueeze(0)
             for a, r in zip(actions, rewards):
                 self.q[a] = self.q[a] + self.alpha * (r - self.q[a])
         return metrics

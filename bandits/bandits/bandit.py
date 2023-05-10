@@ -17,6 +17,7 @@ class Bandit(ABC):
         "sampler": {
             # "class": GreedySampler,
             "class": EpsilonGreedySampler,
+            "params": {"epsilon": 0.1},
         },
     }
 
