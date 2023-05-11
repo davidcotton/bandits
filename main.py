@@ -3,7 +3,7 @@ from datetime import datetime
 
 import mlflow
 
-from bandits.bandits import get_bandits, EpsilonGreedySampler
+from bandits.bandits import build_bandits, EpsilonGreedySampler
 from bandits.bandits.exp3_bandit import Exp3Bandit
 from bandits.envs import build_env
 from bandits.measures import build_measures
@@ -48,7 +48,7 @@ def main(args):
         config.setdefault(k, {})
 
     env = build_env(config)
-    bandits = get_bandits(config)
+    bandits = build_bandits(config, env)
     measures = build_measures(config)
     runner = Runner(config, env, bandits, measures)
 

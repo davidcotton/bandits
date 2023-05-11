@@ -1,13 +1,14 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Tuple
 
+import gym
 from torch import Tensor
 
 
-class Env(ABC):
-    def __init__(self, n_arms=10):
+class Env(gym.Env):
+    def __init__(self, env_config=None) -> None:
         super().__init__()
-        self.n_arms = int(n_arms)
+        self.env_config = env_config or {}
 
     @abstractmethod
     def reset(self) -> Tuple[Tensor, bool]:

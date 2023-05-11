@@ -1,5 +1,6 @@
 from typing import Tuple
 
+from gym import spaces
 import torch
 from torch import Tensor
 
@@ -7,17 +8,19 @@ from bandits.envs.env import Env
 
 
 class BernoulliEnv(Env):
-    def __init__(self, n_arms=10):
-        super().__init__(n_arms)
+    def __init__(self, env_config=None):
+        super().__init__(env_config)
+        n_arms = env_config.get("n_arms", 10)
         self.probs = torch.rand(n_arms)
+        self.action_space = spaces.Discrete(n_arms)
+        self.observation_space = spaces.Discrete(1)
 
     def reset(self) -> Tuple[Tensor, bool]:
-        self.probs = torch.rand(self.n_arms)
-        obs = torch.zeros(self.n_arms)
-        return obs, False
+        self.probs = torch.rand_like(self.probs)
+        return self._fetch_obs(), False
 
     def step(self, actions: Tensor) -> Tuple[Tensor, Tensor, bool, dict]:
-        next_obs = torch.zeros(self.n_arms)
+        next_obs = self._fetch_obs()
         rewards = []
         for a in actions:
             p = torch.rand(1)
@@ -28,3 +31,6 @@ class BernoulliEnv(Env):
             "regret": torch.ones_like(rewards) - rewards,
         }
         return next_obs, rewards, terminal, info
+
+    def _fetch_obs(self) -> Tensor:
+        return torch.zeros(self.observation_space.shape)

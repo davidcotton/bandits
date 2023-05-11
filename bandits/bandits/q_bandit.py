@@ -1,5 +1,6 @@
 from typing import List
 
+from gym import Space
 import torch
 from torch import Tensor
 
@@ -14,8 +15,8 @@ class FixedQLearner(Bandit):
         "initial_q_value": 0.0,  # optional optimistic initialisation
     }
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, action_space: Space, obs_space: Space, **kwargs) -> None:
+        super().__init__(action_space, obs_space, **kwargs)
         self.config.update({
             **FixedQLearner.DEFAULT_CONFIG,  # self config
             **self.DEFAULT_CONFIG,  # child config

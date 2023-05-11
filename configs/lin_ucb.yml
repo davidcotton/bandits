@@ -1,0 +1,15 @@
+global:
+  n_steps: 100
+environment:
+#  class: BernoulliEnv
+#  params:
+#    n_arms: 12
+  class: MovielensEnv
+models:
+  LinUCB:
+    class: LinUCB
+    params:
+      d: 10
+      sampler:
+        class: UCBSampler
+#measures:

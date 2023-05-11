@@ -1,6 +1,8 @@
 import math
 import random
 
+from gym import Space
+
 from bandits.bandits import Bandit
 
 
@@ -9,8 +11,8 @@ class Exp3Bandit(Bandit):
         "gamma": 0.07,
     }
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, action_space: Space, obs_space: Space, **kwargs):
+        super().__init__(action_space, obs_space, **kwargs)
         self.weights = [1.0] * self.n_arms
 
     def select_action(self) -> int:

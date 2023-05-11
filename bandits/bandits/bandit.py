@@ -2,6 +2,7 @@ import importlib
 from abc import ABC, abstractmethod
 from typing import List, Mapping
 
+from gym import Space, spaces
 from torch import Tensor
 
 from bandits.bandits.samplers import (
@@ -15,7 +16,6 @@ from bandits.utils import extract_module
 
 class Bandit(ABC):
     DEFAULT_CONFIG = {
-        "n_arms": 2,
         # "k": 1,
         "sampler": {
             # "class": GreedySampler,
@@ -24,13 +24,15 @@ class Bandit(ABC):
         },
     }
 
-    def __init__(self, **kwargs):
+    def __init__(self, action_space: Space, obs_space: Space, **kwargs):
         super().__init__()
         self.config = {  # merge configs
             **Bandit.DEFAULT_CONFIG,  # parent config
             **self.DEFAULT_CONFIG,  # child config
             **kwargs,  # custom config (if defined)
         }
+        self.obs_space: Space = obs_space
+        self.action_space: Space = action_space
         sampler_config = self.config["sampler"]
         sampler_cls = sampler_config["class"]
         if isinstance(sampler_cls, str):
@@ -47,7 +49,10 @@ class Bandit(ABC):
 
     @property
     def n_arms(self) -> int:
-        return int(self.config["n_arms"])
+        if isinstance(self.action_space, spaces.Discrete):
+            return self.action_space.n
+        else:
+            raise ValueError("Unsupported action space")
 
 
 Bandits = Mapping[str, Bandit]
