@@ -25,8 +25,8 @@ class FixedQLearner(Bandit):
         self.q = torch.full((self.n_arms,), self.config["initial_q_value"])
         self.visits = torch.ones(self.n_arms)
 
-    def act(self, obs: Tensor) -> Tensor:
-        q = self.q.repeat((obs.shape[0], 1))  # tile Q to same dims as obs batch
+    def act(self, obs_batch: Tensor) -> Tensor:
+        q = self.q.repeat((obs_batch.shape[0], 1))  # tile Q to same dims as obs batch
         actions = self.sampler.sample(q, self.visits)
         return actions
 

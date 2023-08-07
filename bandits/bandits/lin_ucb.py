@@ -24,10 +24,10 @@ class RidgeRegressor:
         lhs = x.T @ x
         rhs = x.T @ y
         if self.alpha == 0.0:
-            self.weights, _ = torch.linalg.lstsq(rhs, lhs)
+            self.weights, _, _, _ = torch.linalg.lstsq(rhs, lhs)
         else:
             ridge = self.alpha * torch.eye(lhs.shape[0])
-            self.weights, _ = torch.linalg.lstsq(rhs, lhs + ridge)
+            self.weights, _, _, _ = torch.linalg.lstsq(rhs, lhs + ridge)
 
     def predict(self, x: Tensor) -> Tensor:
         if self.fit_intercept:

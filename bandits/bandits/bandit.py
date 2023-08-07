@@ -41,7 +41,7 @@ class Bandit(ABC):
         self.sampler: Sampler = sampler_cls(**sampler_config.get("params", {}))
 
     @abstractmethod
-    def act(self, obs: Tensor) -> Tensor:
+    def act(self, obs_batch: Tensor) -> Tensor:
         pass
 
     def update(self, batch: List[Transition]) -> dict:
