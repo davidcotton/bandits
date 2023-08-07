@@ -33,6 +33,7 @@ class Runner:
                 obs, terminal = self.env.reset()
                 for _ in tqdm(range(self.n_steps)):
                     actions = bandit.act(obs.unsqueeze(0)).squeeze(1)
+                    # actions = bandit.act(obs.unsqueeze(0))
                     next_obs, rewards, terminal, info = self.env.step(actions)
                     batch = [Transition(obs, actions, next_obs, rewards, terminal)]
                     step_metrics = bandit.update(batch)
