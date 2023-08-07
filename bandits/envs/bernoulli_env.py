@@ -13,7 +13,13 @@ class BernoulliEnv(Env):
         n_arms = env_config.get("n_arms", 10)
         self.probs = torch.rand(n_arms)
         self.action_space = spaces.Discrete(n_arms)
-        self.observation_space = spaces.Discrete(1)
+        # self.observation_space = spaces.Discrete(1)
+        self.observation_space = spaces.Box(
+            low=0,
+            high=1,
+            shape=(1,),
+            # dtype=torch.float
+        )
 
     def reset(self) -> Tuple[Tensor, bool]:
         self.probs = torch.rand_like(self.probs)

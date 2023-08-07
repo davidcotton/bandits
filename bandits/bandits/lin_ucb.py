@@ -41,21 +41,37 @@ class LinUCB(Bandit):
     def __init__(self, action_space: Space, obs_space: Space, **kwargs):
         super().__init__(action_space, obs_space, **kwargs)
         self.alpha = torch.zeros(self.n_arms)
-        d = self.obs_space.shape
+        # d = context dimensionality
+        d = torch.prod(torch.tensor(self.obs_space.shape))
+        # A_k = (d * d) identity matrix
         self.A = [torch.eye(d) for _ in range(self.n_arms)]
+        # b: (d * 1) corresponding response vector
+        # Equal to D_a.T * c_a in ridge regression formula
         # self.b = [torch.zeros([d, 1]) for _ in range(self.n_arms)]
         self.b = torch.zeros([self.n_arms, d, 1])
         # self.theta = [torch.zeros([d, 1]) for _ in range(self.n_arms)]
         self.ridge = RidgeRegressor(self.n_arms)
 
     def act(self, obs: Tensor) -> Tensor:
+        # Reshape covariates input into (d x 1) shape vector
+        obs = obs.T
         probs = []
         for i, (A, b, alpha) in enumerate(zip(self.A, self.b, self.alpha)):
             A_inv = torch.linalg.pinv(A)
-            theta = torch.dot(A_inv, b)
-            p = torch.dot(theta.T, obs) + alpha * torch.sqrt(torch.dot(obs.T, torch.dot(A_inv, obs)))
+            theta = A_inv.mm(b)
+            p = theta.T.mm(obs) + alpha * torch.sqrt(obs.T.mm(A_inv.mm(obs)))
             probs.append(p)
-        return torch.tensor(probs).argmax()
+        # return torch.tensor(probs).argmax()
+        probs = torch.tensor(probs)
+        best_action = probs.argmax()
+        best_action = best_action.unsqueeze(0).unsqueeze(0)
+        return best_action
 
     def update(self, batch: List[Transition]) -> dict:
-        return super().update(batch)
+        metrics = super().update(batch)
+        for obs, actions, _, rewards, _ in batch:
+            obs = obs.unsqueeze(-1)  # reshape covariates input into (d x 1)
+            for a, r in zip(actions, rewards):
+                self.A[a] += obs.mm(obs.T)
+                self.b[a] += r * obs
+        return metrics
