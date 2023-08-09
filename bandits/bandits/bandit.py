@@ -26,19 +26,19 @@ class Bandit(ABC):
 
     def __init__(self, action_space: Space, obs_space: Space, **kwargs):
         super().__init__()
+        self.action_space: Space = action_space
+        self.obs_space: Space = obs_space
         self.config = {  # merge configs
             **Bandit.DEFAULT_CONFIG,  # parent config
             **self.DEFAULT_CONFIG,  # child config
             **kwargs,  # custom config (if defined)
         }
-        self.obs_space: Space = obs_space
-        self.action_space: Space = action_space
         sampler_config = self.config["sampler"]
         sampler_cls = sampler_config["class"]
         if isinstance(sampler_cls, str):
             namespace, import_ = extract_module(sampler_cls, "bandits.bandits")
             sampler_cls = getattr(importlib.import_module(namespace), import_)
-        self.sampler: Sampler = sampler_cls(**sampler_config.get("params", {}))
+        self.sampler: Sampler = sampler_cls(self.action_space, **sampler_config.get("params", {}))
 
     @abstractmethod
     def act(self, obs_batch: Tensor) -> Tensor:

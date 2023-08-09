@@ -1,33 +1,27 @@
 from abc import ABC, abstractmethod
 
-import numpy as np
 import torch
+from gym import Space
 from torch import Tensor
 
 
 class Sampler(ABC):
     DEFAULT_CONFIG = {
-        "n_arms": 2,
         "k": 1,
     }
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, action_space: Space, **kwargs) -> None:
         super().__init__()
+        self.action_space: Space = action_space
         self.config = {  # merge configs
             **Sampler.DEFAULT_CONFIG,  # parent config
             **self.DEFAULT_CONFIG,  # child config
             **kwargs,  # custom config (if defined)
         }
-        # self.n_arms = int(self.config["n_arms"])
-        # self.k = int(self.config["k"])
 
     @abstractmethod
     def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
         pass
-
-    @property
-    def n_arms(self) -> int:
-        return int(self.config["n_arms"])
 
     @property
     def k(self) -> int:
@@ -37,7 +31,7 @@ class Sampler(ABC):
 class RandomSampler(Sampler):
     """Randomly sample an action."""
     def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
-        return np.random.choice(self.n_arms)
+        return torch.tensor([self.action_space.sample() for _ in range(self.k)])
 
 
 class GreedySampler(Sampler):
@@ -54,7 +48,7 @@ class EpsilonGreedySampler(Sampler):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.rand_actions_dist = torch.ones(self.n_arms)
+        self.rand_actions_dist = torch.ones(self.action_space.n)
 
     def sample(self, logits: Tensor, visits: Tensor) -> Tensor:
         batch_size = logits.shape[0]
