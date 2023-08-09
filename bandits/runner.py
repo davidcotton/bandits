@@ -46,7 +46,10 @@ class Runner:
                         metrics[k].append(v)
                     for k, v in step_metrics.items():
                         metrics[k].append(v)
-                    obs = next_obs
+                    if terminal:
+                        obs, terminal = self.env.reset()
+                    else:
+                        obs = next_obs
 
                 run_metrics = {}
                 for k, v in metrics.items():
