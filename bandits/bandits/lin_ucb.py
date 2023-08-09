@@ -36,13 +36,19 @@ class RidgeRegressor:
 
 
 class LinUCB(Bandit):
-    DEFAULT_CONFIG = {}
+    DEFAULT_CONFIG = {
+        "alpha": 1.0,
+    }
 
     def __init__(self, action_space: Space, obs_space: Space, **kwargs):
         super().__init__(action_space, obs_space, **kwargs)
-        self.alpha = torch.zeros(self.n_arms)
-        # d = context dimensionality
-        d = torch.prod(torch.tensor(self.obs_space.shape))
+        self.config.update({
+            **LinUCB.DEFAULT_CONFIG,  # self config
+            **self.DEFAULT_CONFIG,  # child config
+            **kwargs,  # override config
+        })
+        # d: context dimensionality
+        d = torch.prod(torch.tensor(self.obs_space.shape)).item()
         # A_k = (d * d) identity matrix
         self.A = [torch.eye(d) for _ in range(self.n_arms)]
         # b: (d * 1) corresponding response vector
@@ -56,10 +62,10 @@ class LinUCB(Bandit):
         # Reshape covariates input into (d x 1) shape vector
         obs = obs.T
         probs = []
-        for i, (A, b, alpha) in enumerate(zip(self.A, self.b, self.alpha)):
+        for i, (A, b) in enumerate(zip(self.A, self.b)):
             A_inv = torch.linalg.pinv(A)
             theta = A_inv.mm(b)
-            p = theta.T.mm(obs) + alpha * torch.sqrt(obs.T.mm(A_inv.mm(obs)))
+            p = theta.T.mm(obs) + self.alpha * torch.sqrt(obs.T.mm(A_inv.mm(obs)))
             probs.append(p)
         # return torch.tensor(probs).argmax()
         probs = torch.tensor(probs)
@@ -75,3 +81,7 @@ class LinUCB(Bandit):
                 self.A[a] += obs.mm(obs.T)
                 self.b[a] += r * obs
         return metrics
+
+    @property
+    def alpha(self):
+        return float(self.config["alpha"])
