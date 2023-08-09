@@ -13,7 +13,7 @@ from bandits.envs import Env
 
 
 class MovieLensEnv(Env):
-    def __init__(self, n_arms=10, dataset_name="ml-100k"):
+    def __init__(self, n_arms=10, dataset_name="ml-100k", shuffle_data=False):
         super().__init__(n_arms)
         user_ratings = MovieLensDataset(dataset_name)()
         x = user_ratings[["user_id", "rating", "age", "gender", "occupation"]]
@@ -41,10 +41,12 @@ class MovieLensEnv(Env):
         self.action_space = spaces.Discrete(self.n_arms)
         self.cursor = 0
         self.rand_idxs = torch.tensor(range(len(self.x)), dtype=torch.long)
+        self.shuffle_data = bool(shuffle_data)
 
     def reset(self) -> Tuple[Tensor, bool]:
         self.cursor = 0
-        # self.rand_idxs = torch.randperm(n=len(self.x))
+        if self.shuffle_data:
+            self.rand_idxs = torch.randperm(n=len(self.x))
         obs, _ = self._fetch_obs()
         return obs, False
 
