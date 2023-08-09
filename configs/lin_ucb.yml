@@ -4,7 +4,7 @@ environment:
 #  class: BernoulliEnv
 #  params:
 #    n_arms: 12
-  class: MovielensEnv
+  class: MovieLensEnv
 models:
   LinUCB:
     class: LinUCB

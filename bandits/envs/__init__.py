@@ -2,7 +2,7 @@ __all__ = [
     "Env",
     "BernoulliEnv",
     "GaussianEnv",
-    "MovielensEnv",
+    "MovieLensEnv",
     "build_env",
 ]
 
@@ -11,7 +11,7 @@ import importlib
 from bandits.envs.bernoulli_env import BernoulliEnv
 from bandits.envs.env import Env
 from bandits.envs.gaussian_env import GaussianEnv
-from bandits.envs.movielens_env import MovielensEnv
+from bandits.envs.movielens_env import MovieLensEnv
 from bandits.utils import extract_module
 
 

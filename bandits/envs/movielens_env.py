@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Tuple
 
-import pandas as pd
 import scipy.sparse
 import torch
 from gym import spaces
@@ -9,29 +8,14 @@ from sklearn.compose import make_column_selector, ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from torch import Tensor
 
+from bandits.datasets import MovieLensDataset
 from bandits.envs import Env
 
 
-class MovielensEnv(Env):
-    def __init__(self, n_arms=10):
+class MovieLensEnv(Env):
+    def __init__(self, n_arms=10, dataset_name="ml-100k"):
         super().__init__(n_arms)
-        users = pd.read_csv(
-            "~/Documents/data/ml-100k/u.user",
-            sep="|",
-            header=None,
-            names=["user_id", "age", "gender", "occupation", "zip_code"],
-        )
-        ratings = pd.read_csv(
-            "~/Documents/data/ml-100k/u.data",
-            sep="\t",
-            header=None,
-            names=["user_id", "movie_id", "rating", "unix_timestamp"],
-            converters={
-                "unix_timestamp": lambda ts: pd.Timestamp(int(ts), unit="s").to_datetime64(),
-            }
-        )
-        user_ratings = ratings.merge(users, how="left", on="user_id")
-        # user_ratings = pd.read_csv("~/Documents/data/movielens-small/ratings.csv")
+        user_ratings = MovieLensDataset(dataset_name)()
         x = user_ratings[["user_id", "rating", "age", "gender", "occupation"]]
         y = user_ratings[["movie_id"]]
         cat_cols = make_column_selector(dtype_exclude=["number"])(x)
