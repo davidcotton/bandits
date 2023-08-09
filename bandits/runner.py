@@ -24,14 +24,16 @@ class Runner:
     def run(self) -> dict:
         results = []
         for bandit_name, bandit in tqdm(self.bandits.items()):
+            metrics = defaultdict(list)
             run_params = {
                 "bandit": bandit_name,
-                **self.config["global"]
+                "env": self.env.__class__.__name__,
+                **self.config["global"],
             }
-            metrics = defaultdict(list)
             with mlflow.start_run() as run:
+                mlflow.log_params(run_params)
                 obs, terminal = self.env.reset()
-                for _ in tqdm(range(self.n_steps)):
+                for _ in tqdm(range(self.n_steps), mininterval=10):
                     actions = bandit.act(obs.unsqueeze(0)).squeeze(1)
                     # actions = bandit.act(obs.unsqueeze(0))
                     next_obs, rewards, terminal, info = self.env.step(actions)
@@ -52,7 +54,6 @@ class Runner:
                     run_metrics[f"train_{k}_sum"] = np.sum(v).item()
                     run_metrics[f"train_{k}_std"] = np.std(v).item()
                 mlflow.log_metrics(run_metrics)
-                mlflow.log_params(run_params)
                 results.append({**run_metrics, **run_params})
 
         summary = (
